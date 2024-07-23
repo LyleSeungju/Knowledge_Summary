@@ -222,5 +222,14 @@ kubectl get cronjob -o wide
 kubectl get jobs
 kubectl delete -f cronjob.yaml
 ```
+## 실습3 
+microk8s kubectl 명령어 익숙해지기 
 
-이 실습을 통해 Kubernetes에서 다양한 오브젝트를 사용하여 애플리케이션을 배포하고 관리하는 방법을 배웠습니다.
+- kubectl creat, apply 명령어 사용
+- kubectl delete, patch, edit 명령어 사용
+- kubectl log, describe 명령어 사용
+
+명령어 차이점 찾아보기
+- create - apply
+- log - describe
+- patch - edit
