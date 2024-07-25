@@ -503,3 +503,126 @@ Probe 종류
             - secretRef:
                 name: myapp-secret # secret 선언해놓은거 그대로 사용한다는 뜻
         ```
+## 실습 3 
+
+- liveness probe
+    
+    ```yaml
+    # liveness-probe.yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: liveness-pod
+    spec:
+      containers:
+      - name: liveness-container
+        image: busybox
+        args:
+        - /bin/sh
+        - -c
+        - >-
+          touch /tmp/healthy;
+          sleep 30;
+          rm -f /tmp/healthy;
+          sleep 600
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/healthy
+          initialDelaySeconds: 5
+          periodSeconds: 5
+    
+    # 이 설정에서는 /tmp/healthy 파일을 생성하고 30초 후에 삭제합니다. Liveness Probe는 /tmp/healthy 파일이 존재하는지 확인하며, 파일이 삭제되면 Liveness Probe가 실패하게 됩니다. 이로 인해 Kubernetes는 파드를 재시작합니다.
+    
+    ```
+    
+    1. 생성
+    2. 상태 확인
+    3. `k describe pod liveness-pod`
+        - 30초 뒤쯤 다시 확인해보면 재시작하는 것을 확인 할 수 있다.
+    4. 다시 상태 확인 - Restarts 숫자가 증가한걸 확인
+- readiness probe
+    
+    ```yaml
+    #readiness-probe.yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: readiness-pod
+    spec:
+      containers:
+      - name: readiness-container
+        image: busybox
+        args:
+        - /bin/sh
+        - -c
+        - >-
+          touch /tmp/ready;
+          sleep 30;
+          rm -f /tmp/ready;
+          sleep 600
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/ready
+          initialDelaySeconds: 5
+          periodSeconds: 5
+    # 이 설정에서는 /tmp/ready 파일을 생성하고 30초 후에 삭제합니다. Readiness Probe는 /tmp/ready 파일이 존재하는지 확인하며, 파일이 삭제되면 Readiness Probe가 실패하게 됩니다. 이로 인해 Kubernetes는 파드를 서비스에서 제외합니다.
+    
+    ```
+    
+    1. 생성
+    2. 상태확인
+    3. `k describe pod readiness-pod`
+    4. liveness와 달리 재시작되지 않고 서비스에서 제외됨
+        - 사용: 초기화 시간이 오래걸리는 애플리케이션에서 사용됨
+- startup probe
+    
+    ```yaml
+    #startup-probe.yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: startup-pod
+    spec:
+      containers:
+      - name: startup-container
+        image: busybox
+        args:
+        - /bin/sh
+        - -c
+        - >-
+          sleep 20;
+          touch /tmp/started;
+          sleep 600
+        startupProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/started
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 3
+    # 이 설정에서는 파드가 시작한 후 20초 동안 대기하고, 그 후 /tmp/started 파일을 생성합니다. Startup Probe는 /tmp/started 파일이 존재하는지 확인하며, 파일이 존재하지 않으면 프로브가 실패합니다. failureThreshold는 프로브 실패를 허용할 최대 횟수를 설정합니다. 여기서는 3회로 설정되어 있습니다.
+    
+    ```
+    
+    1. 생성
+    2. 상태확인
+    3. `k describe pod startup-pod`
+    4. 일정 횟수 프로브가 실패하면 컨테이너를 자동으로 재시작 시키는 것을 확인
+- 각 프로브 용도
+    - **Readiness Probe**:
+        - 목적: 파드가 트래픽을 받을 준비가 되었는지 확인.
+        - **사용 시기**: 파드가 초기화 중이거나, 외부 종속성 준비 중일 때.
+        - **재시작 조건**: 실패 시 재시작되지 않으며, 단지 트래픽을 받지 않음.
+    - **Startup Probe**:
+        - **목적**: 애플리케이션이 시작 상태에 있는지 확인.
+        - **사용 시기**: 초기화 시간이 오래 걸리는 애플리케이션을 보호할 때.
+        - **재시작 조건**: 실패 시 파드를 재시작.
+    - **Linveness Probe:**
+        - 목적: 애플리케이션이 정상적으로 동작하고 있는지 확인
+        - 사용시기: 애플리케이션이 데드락 상태에 빠지거나 응답하지 않을 때.
+        - 재시작 조건: 실패 시 파드를 재시작.
