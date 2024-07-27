@@ -89,7 +89,7 @@ Kubernetes에서는 컨테이너를 넘어 클러스터 전체를 장악할 수 
     # ex-namespace 네임 스페이스 생성
     kubectl create namespace ex-namespace
     ```
-    
+     
 3. ServiceAccount 생성
     
     ```yaml
