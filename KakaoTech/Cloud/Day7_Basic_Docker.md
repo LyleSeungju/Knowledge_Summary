@@ -20,6 +20,29 @@
 - **`VOLUME`**: 호스트와 컨테이너 간의 디렉토리를 공유
 - **`USER`**: 사용자 설정
 - **`WORKDIR`**: 작업 디렉토리 설정
+- ARG
+- HEALTHCHECK
+- MAINTAINER
+- ONBUILD
+- STOPSIGNAL
+
+##### COPY 와 ADD 의 차이점 
+COPY
+- 빌드 컨텍스트 또는 멅 스테이지 빌드의 단계에서 파일을 컨테이너에 복사
+ADD
+- 원격 HTTPS or Git URL 에서 파일을 가져오기
+- 빌드 컨텍스트에서 파일을 추가 할 때 tar 파일을 자동으로 추출
+
+멀티 스테이지 빌드일때
+- 한 단계에서 다른 단계로 파일을 복사하려면 COPY 사용
+- 빌드 컨텍스트에서 컨테이너 파일로 임시로 추가하여 RUN 명령어를 실행해야 하는 경우, COPY 대신 바인드 마운트를 사용
+- 바인드 마운트?
+	```yaml
+	RUN --mount=type=bind,source=requirements.txt,target=/tmp/requirements.txt \
+	    pip install --requirement /tmp/requirements.txt
+	```
+	- 빌드 컨텐스트에서 컨테이너로 파일을 포함할때 COPY보다 효율적
+	- 바인드 마운트
 
 #### Docker 최적화 방법
 1. **이미지 최적화**: `.dockerignore` 파일 사용하여 불필요한 파일 제외
