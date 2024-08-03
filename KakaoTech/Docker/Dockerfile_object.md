@@ -1,0 +1,141 @@
+
+- `ADD [옵션] <src>`
+	- 로컬 또는 원격 파일과 디렉토리를 추가
+	- 옵션 종류
+		- `--keep-git-dir`=true <깃 레포 주소>  : 깃허브에 있는 특정 파일을 클론 해올 수 있다.
+		- `--checksum`
+		- 리눅스에서만 가능
+			- `--chown`user:user  - 사용자 및 그룹 설정 가능
+			- `--chmod` : 권한 변경
+		- `--parents`=false - 부모 디렉토리 가져오기
+		- `--exclude` : 특정 파일 제외
+- `COPY [옵션] <src>`
+	- 호스트의 파일과 디렉토리를 복사
+	- 옵션 종류
+		- `--from=<image|stage|context> <src>`
+			- 멀티 스테이지 빌드에서 특정 이미지 또는 스테이지 가져오기
+			- 직접 파일을 복사하기
+		- `--chmod` 
+		- `--parent`
+		- `--exclude`(미지원)
+- [[COPY와 ADD 차이점이 뭐죠]]
+- `ARG` 
+	- 빌드 시에만 사용하는 변수 선언
+- `CMD`
+	- `RUN`과 달리 빌드 시 아무작동도 하지 않고 이미지가 실행될때 의도된 명령어를 지정하게끔 됨
+	- 지속적으로 실행된다면 `ENTRYPOINT` 사용
+- `ENTRYPOINT`
+	- 컨테이너를 실행할때 무조건 실행해야 하는 것들
+	- 항상 exec 형식 사용할 것(인수가 제대로 전달되지 않음) `ENTRTPOINT ["command", "param1", "param2"]`
+- `ENV <key>=<value>`
+	- 이걸 사용할땐 해당 이미지에서 컨테이너가 실행될때 계속 환경변수 값을 가져가게 된다면 쓰게끔 
+	- 빌드 중에서만 환경 변수가 필요하다면? 
+		- `RUN TEST_ENV=test apt update` 형태로 쓸수 있음
+		- `ARG` 사용 고려
+- `EXPOSE` 
+	- 수신을 대기 할 포트를 지정 > 이걸 사용한다해서 실제로 외부 포트가 지정되는 것이 아니라 명시만
+	- `EXPOSE 80/tcp`처럼 통신 방식 지정도 가능
+	- 실제로 해당 도커가 호스트나 외부와 통신하려면 직접 마운트 필요(`-p` 명령어 사용) 
+	- `-p` `--expose`
+		- 컨테이너의 포트를 호스트에 바인딩
+		- `-p 127.0.0.1:80:8080/tcp` 와 같이 새로 지정 할 수도 있다.
+	- `-P -publish-all`
+		- 이미지에 명시된 포트를 호스트에 모두 노출하게끔 사용
+		- `/proc/sys/net/ipv4/ip_local_port_range`로 포트 범위를 확인 할 수 있다.
+- `FROM`
+	- `FROM [--platform=<platform>] <image>[:<tag>] [AS <name>]`
+	- `FROM` 명령어는 새로운 빌드 단계를 초기화함(이 명령어로 단계가 나눠짐) > Dockerfile을 작성할때 무조건 FROM이 무조건 맨 앞에 위치해야됨(ARG는 예외)
+	- 이걸로 Dockerfile 내에서 여러번 이미지를 만들거나, 한 빌드 단계에서 다른 빌드 단계에 종속성으로 사용 => [[멀티 스테이지 빌드]]가 되는 이유
+		- **Q. 스테이지 별로 빌드를 하면 해당 빌드되는 파일은 어디에 저장하고 있는지?** 
+			- 해당 스테이지 내에 컨테이너 파일 시스템에 임시로 저장됨
+	- 추가 요소
+		- AS 키워드 : `FROM Node.js AS builder` 로 사용하여 빌드 단계에 이름을 지정 할 수 있음
+			- 다음 사용할때 `COPY --from=builder`형태로 생성된 파일을 사용 가능
+		- Tag 키워드: `FROM Noode.js:20.04` 형태로 특정 태그의 이미지를 가져올 수 있음
+- `HEALTHCHECK`
+	- `HEALTHCHECK <option> CMD command`
+	- Docker에게 컨테이너가 여전히 작동하는지 확인하기 위해 테스트하는 방법들, 명령어는 하나만 가능
+	  ex. 도커가 실행중이지만 무한 루프에 갇혀 새 연결을 처리 할 수 없을때
+	- 옵션들
+		- `--interval=DURATION(default: 30s)`
+		- `--timeout=DURATION(default: 30s)`
+		- `--start-period==DURATION(default: 0s)`
+		- `--start-interval==DURATION(default: 5s)`
+		- `--retries=N(default: 3)`
+	- ex. 웹 서버가 3초 이내에 사이트의 메인 페이지를 제공 할 수 있는지 5분마다 확인
+	  `HEALTHCHECK --interval=5m --timeout=3s \ CMD curl -f http://localhost/ || exit 1`
+	  - 상태
+		  - 0: 성공 - 컨테이너가 건강하고 사용할 준비가 됨
+		  - 1: 건강하지 않음 - 컨테이너가 올바르게 작동x
+		  - 2: 예약됨 - 종료시키지마세요
+- `LABEL <key>=<value>` - 라벨 설정
+- `MAINTAINER <name>` - 이미지 작성자 설정
+- `ONBUILD` - 안쓸랭
+	- 도커 파일을 재 사용하려할때 활용 할수 있도록 지침을 정해두는건데 안쓸듯
+- `RUN`
+	- `RUN [options] <command>`
+		- 명령어를 && 형태로 뭉쳐서 쓰는 편이 좋다(레이어 캐싱, 근데 자주 바뀌는거면 분리하기)
+		- 줄바꿈 명령어는 `\` 또는 `<< EOF ~ EOF`는 성능에 영향x, 가독성 향상
+	- 컨테이너 내에서 명령어가 실행됨
+	- 옵션들
+		- `--mount=[type=TYPE]`
+			- `--mount=type=bind,source=/path/on/host, target=/path/in/container`
+				- 호스트 파일 시스템을 컨테이너에 마운트
+				- source:  호스트 시스템의 경로 지정
+				- target: 컨테이너 내 경로 지정
+			- `--mount=type=cache,target=/root/.cache/go-build`
+				- 자주 사용하는 데이터에 대해 캐시에 저장하여 빌드 속도 향상
+				- 속성
+					- target: 필수, 캐시를 저장할 경로를 지정(호스트)
+					- id: 선택, 특정 캐시 식별자 지정, 같은 ID를 가진 캐시를 공유 가능
+					- sharing: 선택, 캐시의 공유 방식
+						- shared: 캐시가 모든 빌드에서 공유
+						- private: 빌드에서 별도로 캐시를 사용
+						- locked: 특정 빌드에서 캐시를 잠금하여 사용
+					- from: 선택, 특정 빌드 스테이지 이름을 지정하여, 해당 캐시를 사용
+					- mode: 선택, 캐시의 읽기 및 쓰기 권한을 지정. rw(읽기-쓰기, default) / ro(읽기 전용)
+			- `--mount=type=tmpfs,target=/app/temp`
+				- 컨테이너의 임시 파일 시스템에 데이터를 저장. 메모리에 저장되지만 휘발성
+				- target : 임시 파일 시스템이 마운트 될 경로 지정
+				- size: tmpfs 크기를 설정(ex. size=100m)
+			- `--mount=type=secret,id=mysecret, target=/run/secret/mysecret`
+				- 민감한 데이터를 안전하게 전달하는데 사용 - 비밀번호, API키, 인증서와 같은 민감한 정보를 빌드시점에 전달하는데 유용
+					- docker의 비밀관리(secret management) 기능과 함께 작동하여, 비밀데이터가 docker 데몬에 의해 안전하게 관리
+					- 근데 secret management가 docker swarm을 통해서만 가능해서...
+				- 속성
+					- id: 사용하려는 비밀의 이름,  docker의 비밀저장소에서 특정 비밀을 식별하는데 사용
+					- target: 컨테이너 내에서 비밀 파일이 마운트 경로를 지정
+					- required: 지정된 비밀이 없을 경우 빌드를 실패하게 만드는 옵션, default는 false
+				- 사용 방법
+					1. 도커에 비밀을 등록 `echo "my-secret-password" | docker secret create mypassword -` 
+					2. dockerfile에서 비밀을 사용하여 빌드를 진행
+					   `RUN --mount=type=secret,id=mypassword,target=/run/secrets/mypassword
+					3. 빌드 시 secret 옵션을 사용하여 비밀을 전달해야함
+					   `docker build --secret id=mypassword -t myapp .`
+					4. 정상 실행 확인
+			- `--mount=type=ssh \ ssh -i ec2-user@<instance ip>`
+				- ssh 자격 증명을 사용하여 빌드 시점에 보안 연결을 할 수 있다.
+				- 보안이 필요한 경우나 git 클론 뜰때 유용 -> ADD에서의 깃 옵션도 있다.
+		- `--network`
+			- `--network=default`: 아무 효과 없고 기본 
+			- `--network=none`: 외부 네트워크와 분리된 단독 네트워크로 구성
+			- `--network=host`: 호스트의 네트워크 환경에서 실행됨 
+				- 호스트의 네트워크 환경에서 실행되는 것이기에 보안에 취약하여 주의
+		- `--security`(아직 미지원)
+- `SHELL` - 쉘 지정 근데 안쓸듯
+- `STOPSIGNAL`
+	- 해당 컨테이너가 `docker stop` 신호를 받으면 STOPSIGNAL을 지정받은 서비스가 미리 정리되게끔 할수 있다.
+	- 종류
+		- `SIGERM (15)`: 프로세스에 종료 요청을 보내는데 기본적으로 docker stop이 보냄(기본값)
+		- `SIGKILL (9)`: 즉시 프로세스를 종료. 정리 없이 강제 종료
+		- `SIGINT (2)`: 인터럽스 신호 == CTRL + C
+		- `SIGQUIT (3)`: 종료 및 코어 덤프 신호로 좀더 강제적 종료
+- `USER <user>[:<group>]` : 사용자 지정 
+	- 지정된 사용자는 `RUN` 명령어에 사용되고 런타임에는 관련 `ENTRYPOINT` & `CMD` 명령을 실행
+	- 보안쪽으로 생각해서 이미지 실행을 root로 시작하는 것이 아닌 사용자로 애플리케이션을 실행
+- `VOLUME <src>`
+	- 호스트의 특정 지점을 마운트
+	- 이것을 통해 컨테이너의 로그를 호스트에 저장하고 확인 할 수 있다. 
+- `WORKDIR`
+	- 작업 디렉토리를 설정
+	- 해당 디렉토리가 없으면 자동으로 생성
