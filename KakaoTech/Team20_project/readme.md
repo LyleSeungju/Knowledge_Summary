@@ -5,7 +5,7 @@
 
 ### 기술 스택 및 아키텍처 구성
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/6af598e5-58e5-4231-975f-ea037181fcbc/5907139d-a92a-4f5e-84ee-2c3d140f0116/Untitled.png)
+![Untitled](./team20_tech_diagram.jpg)
 
 - 설계 의도
     - 각 인스턴스 당 하나의 컨테이너: 단일 책임 원칙
@@ -30,7 +30,7 @@
 
 ### 네트워크 구성
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/6af598e5-58e5-4231-975f-ea037181fcbc/a7f9fab8-5827-4f2b-ba5b-06fa10396f16/Untitled.png)
+![Untitled](./team20_network_diagram.jpg)
 
 - **설계 의도**
     - Subnet
